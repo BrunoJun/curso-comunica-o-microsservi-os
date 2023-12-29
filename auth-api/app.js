@@ -1,8 +1,13 @@
 import express, { request, response } from "express";
+import * as db from "./src/config/db/initialData.js";
+import UserRoutes from "./src/modules/user/routes/UserRoutes.js";
+import CheckToken from "./src/config/auth/CheckToken.js";
 
 const app = express();
 const env = process.env;
 const PORT = env.PORT || 8080;
+
+db.createInitalData();
 
 app.get('/api/status', (request, response) => {
 
@@ -13,6 +18,10 @@ app.get('/api/status', (request, response) => {
         httpStatus: 200
     })
 })
+
+app.use(express.json()); 
+
+app.use(UserRoutes); 
 
 app.listen(PORT, () => {
 
