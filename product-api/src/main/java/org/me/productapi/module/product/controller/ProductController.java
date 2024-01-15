@@ -4,8 +4,10 @@ import org.me.productapi.config.exception.SuccessResponse;
 import org.me.productapi.module.category.dto.CategoryRequest;
 import org.me.productapi.module.category.dto.CategoryResponse;
 import org.me.productapi.module.category.service.CategoryService;
+import org.me.productapi.module.product.dto.ProductCheckStockRequest;
 import org.me.productapi.module.product.dto.ProductRequest;
 import org.me.productapi.module.product.dto.ProductResponse;
+import org.me.productapi.module.product.dto.ProductSalesResponse;
 import org.me.productapi.module.product.model.Product;
 import org.me.productapi.module.product.service.ProductService;
 import org.me.productapi.module.supplier.dto.SupplierResponse;
@@ -67,5 +69,17 @@ public class ProductController {
     public ProductResponse update(@RequestBody ProductRequest request, @PathVariable Integer id){
 
         return service.update(request, id);
+    }
+
+    @PostMapping("check-stock")
+    public SuccessResponse checkProductsStock(@RequestBody ProductCheckStockRequest request){
+
+        return service.checkProductsStock(request);
+    }
+
+    @GetMapping("{id}/sales")
+    public ProductSalesResponse findProductSales(@PathVariable Integer id){
+
+        return service.findProductSales(id);
     }
 }
