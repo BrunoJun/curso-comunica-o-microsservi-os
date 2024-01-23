@@ -212,7 +212,7 @@ public class ProductService {
                         productsForUpdates.add(existingProduct);
                     });
 
-            if (isEmpty(productsForUpdates)){
+            if (!isEmpty(productsForUpdates)){
 
                 repository.saveAll(productsForUpdates);
                 salesConfirmationSender.sendSalesConfirmationMessage(new SalesConfirmationDTO(productStockDTO.getSalesId(), SaleStatus.APPROVED));

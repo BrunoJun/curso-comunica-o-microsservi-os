@@ -5,9 +5,11 @@ import feign.RequestTemplate;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.me.productapi.config.exception.ValidationException;
+import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+@Component
 public class FeignClientAuthInterceptor implements RequestInterceptor {
 
     @Override
