@@ -68,6 +68,10 @@ class UserService{
     async getAccessToken(request){
 
         try {
+
+            const {transactionid, serviceid} = request.headers;
+
+            console.info(`Request to Post order with data ${JSON.stringify(request.body)} | TransactionId: ${transactionid} | ServiceId: ${serviceid}`);
             
             const {email, password} = request.body;
             this.checkAccessTokenData(email, password);
@@ -76,10 +80,16 @@ class UserService{
             await this.checkPassword(password, user.password);
             const authUser =  {id: user.id, name: user.name, email: user.email};
             const accessToken = jwt.sign({authUser}, secrets.API_SECRET,{expiresIn: '1d'});
-            return {
+
+            let response = {
                 status: httpStatus.SUCCESS,
                 accessToken
             };
+
+            console.info(`Response to Post login with data ${JSON.stringify(response)} | TransactionId: ${transactionid} | ServiceId: ${serviceid}`);
+
+            return response;
+
         } catch (error) {
             
             return {

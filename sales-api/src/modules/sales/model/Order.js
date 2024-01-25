@@ -24,6 +24,16 @@ const OrderSchema = new Schema({
   updatedAt: {
     type: Date,
     required: true
+  },
+  transactionid: {
+
+    type: String,
+    required: true
+  },
+  serviceid: {
+
+    type: String,
+    required: true
   }
 });
 

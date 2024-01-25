@@ -5,6 +5,7 @@ import CheckToken from "./src/config/auth/CheckToken.js";
 import {connectRabbitmq} from './src/config/rabbitmq/rabbitConfig.js';
 import {sendProductToStockUpdateQueue} from './src/modules/product/rabbitmq/productStockUpdateSender.js';
 import orderRoutes from './src/modules/sales/routes/OrderRoutes.js';
+import tracing from "./src/config/tracing.js";
 
 const app = express();
 const env = process.env;
@@ -15,6 +16,7 @@ connectMongoDB();
 connectRabbitmq();
 
 app.use(express.json());
+app.use(tracing);
 app.use(CheckToken);
 app.use(orderRoutes);
 

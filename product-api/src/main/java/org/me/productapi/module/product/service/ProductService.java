@@ -1,6 +1,9 @@
 package org.me.productapi.module.product.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.me.productapi.config.RequestUtil;
 import org.me.productapi.config.exception.SuccessResponse;
 import org.me.productapi.config.exception.ValidationException;
 import org.me.productapi.module.category.dto.CategoryRequest;
@@ -29,6 +32,9 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 @Slf4j
 @Service
 public class ProductService {
+
+    private static final String TRANSACTION_ID = "transactionid";
+    private static final String SERVICE_ID = "serviceid";
 
     @Autowired
     private ProductRepository repository;
@@ -215,12 +221,12 @@ public class ProductService {
             if (!isEmpty(productsForUpdates)){
 
                 repository.saveAll(productsForUpdates);
-                salesConfirmationSender.sendSalesConfirmationMessage(new SalesConfirmationDTO(productStockDTO.getSalesId(), SaleStatus.APPROVED));
+                salesConfirmationSender.sendSalesConfirmationMessage(new SalesConfirmationDTO(productStockDTO.getSalesId(), SaleStatus.APPROVED, productStockDTO.getTransactionid()));
             }
         } catch (Exception e){
 
             log.error("Error while trying to update stock for message with error: {}", e.getMessage(), e);
-            salesConfirmationSender.sendSalesConfirmationMessage(new SalesConfirmationDTO(productStockDTO.getSalesId(), SaleStatus.REJECTED));
+            salesConfirmationSender.sendSalesConfirmationMessage(new SalesConfirmationDTO(productStockDTO.getSalesId(), SaleStatus.REJECTED, productStockDTO.getTransactionid()));
         }
     }
 
@@ -249,13 +255,32 @@ public class ProductService {
     
     public ProductSalesResponse findProductSales(Integer id){
 
-        var product = findById(id);
         try {
+
+            var product = findById(id);
+
+            var currentRequest = RequestUtil.getCurretRequest();
+            var transactionid = currentRequest.getHeader(TRANSACTION_ID);
+            var serviceid = currentRequest.getAttribute(SERVICE_ID);
+
+            log.info("Sending GET request sales by productId with data {} | TransactionId: {} | ServiceId: {}",
+                    product.getId(),
+                    transactionid,
+                    serviceid);
 
             var sales = salesClient
                     .findSalesByProductId(product.getId())
                     .orElseThrow(() -> new ValidationException("The sales was not found."));
-            return ProductSalesResponse.of(product, sales.getSalesIds());
+
+            var response = ProductSalesResponse.of(product, sales.getSalesIds());
+
+            log.info("Receiving GET response sales by productId with data {} | TransactionId: {} | ServiceId: {}",
+                    response,
+                    transactionid,
+                    serviceid);
+
+            return response;
+
         } catch (Exception e){
 
             throw  new ValidationException("There was an error trying to get the product's sales");
@@ -264,15 +289,39 @@ public class ProductService {
 
     public SuccessResponse checkProductsStock(ProductCheckStockRequest request){
 
-        if (isEmpty(request) || isEmpty(request.getProducts())){
+        try {
 
-            throw new ValidationException("The request must be informed");
+            var currentRequest = RequestUtil.getCurretRequest();
+            var transactionid = currentRequest.getHeader(TRANSACTION_ID);
+            var serviceid = currentRequest.getAttribute(SERVICE_ID);
+
+            log.info("Request to Post order with data {} | TransactionId: {} | ServiceId: {}",
+                    new ObjectMapper().writeValueAsString(request),
+                    transactionid,
+                    serviceid);
+
+            if (isEmpty(request) || isEmpty(request.getProducts())){
+
+                throw new ValidationException("The request must be informed");
+            }
+
+            request
+                    .getProducts()
+                    .forEach(productQuantityDTO -> validateStock(productQuantityDTO));
+
+            var response = SuccessResponse.create("The stock is OK");
+
+            log.info("Response to Post order with data {} | TransactionId: {} | ServiceId: {}",
+                    new ObjectMapper().writeValueAsString(response),
+                    transactionid,
+                    serviceid);
+
+            return response;
+
+        } catch (Exception e){
+
+            throw new ValidationException(e.getMessage());
         }
-
-        request
-                .getProducts()
-                .forEach(productQuantityDTO -> validateStock(productQuantityDTO));
-        return SuccessResponse.create("The stock is OK");
     }
 
     private void validateStock(ProductQuantityDTO productQuantityDTO){

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import static org.me.productapi.config.RequestUtil.getCurretRequest;
+
 @Component
 public class FeignClientAuthInterceptor implements RequestInterceptor {
 
@@ -18,20 +20,7 @@ public class FeignClientAuthInterceptor implements RequestInterceptor {
         var currentRequest = getCurretRequest();
 
         requestTemplate
-                .header("Authorization", currentRequest.getHeader("Authorization"));
-    }
-
-    private HttpServletRequest getCurretRequest(){
-
-        try {
-
-            return ((ServletRequestAttributes) RequestContextHolder
-                    .getRequestAttributes())
-                    .getRequest();
-        } catch (Exception e){
-
-            e.printStackTrace();
-            throw new ValidationException("The current request could not be processed");
-        }
+                .header("Authorization", currentRequest.getHeader("Authorization"))
+                .header("transactionid", currentRequest.getHeader("transactionid"));
     }
 }

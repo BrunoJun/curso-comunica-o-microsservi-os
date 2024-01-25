@@ -10,8 +10,11 @@ class OrderService{
     async createOrder(request){
 
         try {
-            
             let orderData = request.body;
+
+            const {transactionid, serviceid} = request.headers;
+            console.info(`Request to Post new order with data ${JSON.stringify(orderData)} | TransactionId: ${transactionid} | ServiceId: ${serviceid}`);
+            
             this.validateOrderData(orderData);
             const {authUser} = request;
             const {authorization} = request.headers;
@@ -21,19 +24,26 @@ class OrderService{
                 user: authUser,
                 createdAt: new Date(),
                 updatedAt: new Date(),
-                products: orderData.products
+                products: orderData.products,
+                transactionid,
+                serviceid
             }
 
-            await this.validateProductStock(order, authorization);
+            await this.validateProductStock(order, authorization, transactionid);
 
             let createdOrder = await OrderRepository.save(order);
-            this.sendMessage(createdOrder);
+            this.sendMessage(createdOrder, transactionid);
 
-            return {
+            let response = {
 
                 status: SUCCESS,
                 createdOrder
             }
+
+            console.info(`Response to Post new order with data ${JSON.stringify(response)} | TransactionId: ${transactionid} | ServiceId: ${serviceid}`);
+
+            return response;
+
         } catch (error) {
             
             return {
@@ -62,7 +72,7 @@ class OrderService{
                 }
             } else {
 
-                console.warn('The order message was not complete');
+                console.warn(`The order message was not complete. TransactionId: ${orderMessage.transactionid}`);
             }
 
         } catch (error) {
@@ -80,9 +90,9 @@ class OrderService{
         }
     }
 
-    async validateProductStock(order, token){
+    async validateProductStock(order, token, transactionid){
 
-        let stockIsOK = await ProductClient.checkProductStock(order, token);
+        let stockIsOK = await ProductClient.checkProductStock(order, token, transactionid);
 
         if (!stockIsOK){
 
@@ -90,12 +100,13 @@ class OrderService{
         }
     }
 
-    sendMessage(order){
+    sendMessage(order, transactionid){
 
         const message = {
 
             salesId: order.id,
-            products: order.products
+            products: order.products,
+            transactionid
         }
         
         sendProductToStockUpdateQueue(message);
@@ -103,7 +114,11 @@ class OrderService{
 
     async findById(request){
 
+        
         const {id} = request.params;
+        const {transactionid, serviceid} = request.headers;
+        console.info(`Request to Get sale by ID ${id} | TransactionId: ${transactionid} | ServiceId: ${serviceid}`);
+
         this.validateInformedId(id);
         const existingOrder = await OrderRepository.findById(id);
 
@@ -116,16 +131,22 @@ class OrderService{
             }
         }
 
-        return {
+        let response = {
 
             status: SUCCESS,
             existingOrder
         }
+
+        console.info(`Response to Get sale by ID ${id}: Response: ${JSON.stringify(response)} | TransactionId: ${transactionid} | ServiceId: ${serviceid}`);
+
+        return response
     }
 
     async findAll(){
 
         const orders = await OrderRepository.findAll();
+        const {transactionid, serviceid} = request.headers;
+        console.info(`Request to Get all sales | TransactionId: ${transactionid} | ServiceId: ${serviceid}`);
 
         if (!orders){
 
@@ -136,11 +157,15 @@ class OrderService{
             }
         }
 
-        return {
+        let response = {
 
             status: SUCCESS,
             orders
         }
+
+        console.info(`Response to Get all sales : Response: ${response} | TransactionId: ${transactionid} | ServiceId: ${serviceid}`);
+
+        return response;
     }
 
     async findByProductId(request){
@@ -148,6 +173,9 @@ class OrderService{
         const {productId} = request.params;
         this.validateInformedProductId(productId);
         const orders = await OrderRepository.findByProductId(productId);
+        const {transactionid, serviceid} = request.headers;
+
+        console.info(`Request to Get all sales by Product ID ${productId} | TransactionId: ${transactionid} | ServiceId: ${serviceid}`);
 
         if (!orders){
 
@@ -158,13 +186,17 @@ class OrderService{
             }
         }
 
-        return {
+        let response = {
 
             status: SUCCESS,
             salesIds: orders.map((order) => {
                 return order.id;
             })
         }
+
+        console.info(`Response to Get all sales by Product ID ${productId}: Response: ${JSON.stringify(response)} | TransactionId: ${transactionid} | ServiceId: ${serviceid}`);
+
+        return response;
     }
 
     validateInformedId(id){
