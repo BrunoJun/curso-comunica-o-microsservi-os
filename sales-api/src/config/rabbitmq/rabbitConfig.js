@@ -3,7 +3,7 @@ import {listenToSalesConfirmationQueue} from '../../modules/sales/rabbitmq/sales
 import {PRODUCT_TOPIC, PRODUCT_STOCK_UPDATE_QUEUE, PRODUCT_STOCK_UPDATE_ROUTING_KEY, SALES_CONFIRMATION_QUEUE, SALES_CONFIRMATION_ROUTING_KEY} from './queue.js';
 import {RABBIT_MQ_URL} from '../constants/secrets.js';
 
-const TEN_SECONDS = 10000;
+const TEN_SECONDS = 1000000;
 const HALF_MINUTES = 30000;
 const CONTAINER_ENV = 'container';
 
@@ -11,21 +11,12 @@ export async function connectRabbitmq(){
 
     const env = process.env.NODE_ENV;
 
-    if (CONTAINER_ENV === env){
-
-        setInterval(async () => {
-
-            connectRabbitmqAndCreateQueues();
-        }, HALF_MINUTES);
-    } else {
-
-        connectRabbitmqAndCreateQueues();
-    }
+    connectRabbitmqAndCreateQueues();
 }
 
 async function connectRabbitmqAndCreateQueues(){
 
-    amqp.connect(RABBIT_MQ_URL, (error, connection) => {
+    amqp.connect(RABBIT_MQ_URL, {timeout: 1000000}, (error, connection) => {
 
         if (error) {
 

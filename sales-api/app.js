@@ -10,10 +10,28 @@ import tracing from "./src/config/tracing.js";
 const app = express();
 const env = process.env;
 const PORT = env.PORT || 8082;
+const THREE_MINUTES = 600000;
+const CONTAINER_ENV = 'container';
 
-connectMongoDB();
-//createInitialData();
-connectRabbitmq();
+startApplication();
+
+async function startApplication(){
+
+    if (CONTAINER_ENV === env.NODE_ENV){
+
+        console.log('Wainting for RabbitMQ and MongDB containers to start...');
+
+        setInterval(async () => {
+
+            connectMongoDB();
+            connectRabbitmq();
+        }, THREE_MINUTES);
+    } else {
+
+        connectMongoDB();
+        connectRabbitmq();
+    }
+}
 
 app.use(express.json());
 app.use(tracing);
